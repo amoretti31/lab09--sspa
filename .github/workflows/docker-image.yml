@@ -1,7 +1,8 @@
 name: Build and publish Docker image
-
 on:
-  workflow_dispatch:
+  push:
+    paths:
+      - 'docker/**'
 
 permissions:
   contents: read
