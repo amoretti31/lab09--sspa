@@ -13,27 +13,26 @@ permissions:
 jobs:
     build:
         runs-on: ubuntu-latest
-        container:
-            image: ghcr.io/${{ github.repository }}:latex
-            credentials:
-                username: ${{ github.actor }}
-                password: ${{ secrets.GITHUB_TOKEN }}
         steps:
             - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
             - name: Set safe directory for Git
               run: git config --global --add safe.directory /__w/lab09--sspa/lab09--sspa
             - name: Get previous version
               run: |
-                    git fetch origin master
-                    git checkout FETCH_HEAD~1 main.tex
+                git fetch origin master
+                if git rev-parse FETCH_HEAD~1 >/dev/null 2>&1; then
+                  git checkout FETCH_HEAD~1 main.tex
+                else
+                  echo "No previous commit available" && exit 1
               id: previous
             - name: Generate diff
               run: latexdiff main.tex main.tex > diff.tex
             - name: Compile PDF from diff
-              run: |
-                    latexmk -pdf -interaction=nonstopmode diff.tex
+              run: latexmk -pdf -interaction=nonstopmode diff.tex
             - name: Upload PDF artifact
               uses: actions/upload-artifact@v4
               with:
-                    name: lab09-latex-diff-pdf
-                    path: ./diff.pdf
+                name: lab09-latex-diff-pdf
+                path: ./diff.pdf
