@@ -1,4 +1,4 @@
-name: Lab09 - Full CI + Preview
+name: Lab09 - Full CI
 
 on:
   push:
@@ -8,12 +8,11 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   full-ci:
     runs-on: ubuntu-latest
+
     container:
       image: ghcr.io/${{ github.repository }}:latex
       credentials:
@@ -21,14 +20,17 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
+      # Step 1: Checkout repository with full history
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Step 2: Fix Git safe.directory
       - name: Git safe.directory
         run: git config --global --add safe.directory "$(pwd)"
 
+      # Step 3: Generate git diff
       - name: Generate git diff
         run: |
           mkdir -p artifacts/diff
@@ -42,6 +44,7 @@ jobs:
             git diff "$BEFORE" "$AFTER" > artifacts/diff/diff.txt
           fi
 
+          # Create LaTeX document for the diff
           cat << 'EOF' > diff.tex
           \documentclass[a4paper,11pt]{article}
           \usepackage[T1]{fontenc}
@@ -73,15 +76,18 @@ jobs:
           \end{document}
           EOF
 
+          # Compile diff PDF
           latexmk -pdf -interaction=nonstopmode diff.tex
           mv diff.pdf artifacts/diff/
 
+      # Step 4: Compile main PDF
       - name: Compile main PDF
         run: |
           mkdir -p artifacts/main
           latexmk -pdf -interaction=nonstopmode main.tex
           mv main.pdf artifacts/main/
 
+      # Step 5: Spellcheck all .tex files
       - name: Spellcheck .tex files
         run: |
           mkdir -p artifacts/spellcheck
@@ -89,6 +95,7 @@ jobs:
             hunspell -l -t "$file" > artifacts/spellcheck/$(basename "$file").txt || true
           done
 
+      # Step 6: Check bibliography
       - name: Check bibliography
         run: |
           mkdir -p artifacts/bib
@@ -97,29 +104,9 @@ jobs:
             bibtex "${file%.tex}" >/dev/null 2>&1 || echo "Bibtex failed for $file" >> artifacts/bib/bib_errors.txt
           done
 
+      # Step 7: Upload all artifacts
       - name: Upload all artifacts
         uses: actions/upload-artifact@v4
         with:
           name: lab09-full-artifacts
           path: artifacts/
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: full-ci
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: lab09-full-artifacts
-          path: artifacts
-
-      - name: Publish PDFs for preview
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./artifacts
-          destination_dir: lab09-preview
-          publish_branch: gh-pages
