@@ -26,7 +26,7 @@ jobs:
               run: |
                     git fetch origin master
                     git checkout FETCH_HEAD~1 main.tex
-                id: previous
+              id: previous
             - name: Generate diff
               run: latexdiff main.tex main.tex > diff.tex
             - name: Compile PDF from diff
