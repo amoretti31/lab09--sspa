@@ -29,8 +29,10 @@ jobs:
                     aspell --mode=tex list < "$file" | sort -u | while read -r word; do
                         grep -n "$word" "$file" | while read -r line; do
                             echo "$file:$line" >> $output_file
+                            echo >> $output_file
                         done
                     done
+                    echo >> $output_file
                 done
     
           - name: Convert report to PDF
