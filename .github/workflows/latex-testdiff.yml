@@ -20,8 +20,6 @@ jobs:
                 password: ${{ secrets.GITHUB_TOKEN }}
         steps:
             - uses: actions/checkout@v4
-            - name: Install latexdiff
-              run: sudo apt-get update && sudo apt-get install -y latexdiff
             - name: Get previous version
               run: |
                     git fetch origin master
