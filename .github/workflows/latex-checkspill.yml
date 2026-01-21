@@ -30,7 +30,7 @@ jobs:
                     echo "File: $file" >> "$output_file"
                     echo "-----------------" >> "$output_file"
 
-                    misspelled=$(aspell --mode=tex list < "$file" | sort -u)
+                    misspelled=$(aspell --personal=./.aspell.en.pws --mode=tex list < "$file" | sort -u)
 
                     if [ -z "$misspelled" ]; then
                         echo "No spelling errors found." >> "$output_file"
@@ -40,7 +40,9 @@ jobs:
 
                     while IFS= read -r word; do
                         grep -n -w "$word" "$file" | while IFS= read -r line; do
-                            echo "$line  [misspelled: $word]" >> "$output_file"
+                            echo "$line" >> "$output_file"
+                            echo "Errore: $word" >> "$output_file"
+                            echo >> "$output_file"   # 👈 riga vuota dopo ogni errore
                         done
                     done <<< "$misspelled"
 
