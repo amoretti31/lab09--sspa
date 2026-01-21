@@ -20,6 +20,8 @@ jobs:
                 password: ${{ secrets.GITHUB_TOKEN }}
         steps:
             - uses: actions/checkout@v4
+            - name: Set safe directory for Git
+              run: git config --global --add safe.directory /__w/lab09--sspa/lab09--sspa
             - name: Get previous version
               run: |
                     git fetch origin master
