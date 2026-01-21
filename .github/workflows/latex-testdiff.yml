@@ -50,37 +50,38 @@ jobs:
           # Generate the diff
           git diff "$BEFORE" "$AFTER" > diff.txt
 
-      # Wrap the diff in a LaTeX document
-      - name: Create LaTeX document for diff
-        run: |
-          cat << 'EOF' > diff.tex
-          \documentclass[a4paper,11pt]{article}
-          \usepackage[T1]{fontenc}
-          \usepackage[utf8]{inputenc}
-          \usepackage{geometry}
-          \usepackage{fancyvrb}
-          \geometry{margin=1in}
-          \setlength{\parindent}{0pt}
-
-          \begin{document}
-
-          \section*{Git Diff}
-          Commit range:\\
-          \texttt{${{ github.event.before }} → ${{ github.sha }}}
-
-          \bigskip
-
-          \begin{Verbatim}[fontsize=\small]
-          EOF
-
-          # Insert the diff contents
-          cat diff.txt >> diff.tex
-
-          cat << 'EOF' >> diff.tex
-          \end{Verbatim}
-          \end{document}
-          EOF
-
+          - name: Create LaTeX document for diff
+          run: |
+            cat << 'EOF' > diff.tex
+            \documentclass[a4paper,11pt]{article}
+            \usepackage[T1]{fontenc}
+            \usepackage[utf8]{inputenc}
+            \usepackage{geometry}
+            \usepackage{xcolor}
+            \usepackage{listings}
+            \geometry{margin=1in}
+            \setlength{\parindent}{0pt}
+        
+            \lstdefinestyle{gitdiff}{
+                basicstyle=\ttfamily\small,
+                morecomment=[l][\color{red}]{-},
+                morecomment=[l][\color{green!60!black}]{+}
+            }
+        
+            \begin{document}
+        
+            \section*{Git Diff}
+            Commit range:\\
+            \texttt{${{ github.event.before }}} → \texttt{${{ github.sha }}}
+        
+            \bigskip
+        
+            \lstset{style=gitdiff}
+            \lstinputlisting{diff.txt}
+        
+            \end{document}
+            EOF
+        
       # Compile the LaTeX document into a PDF
       - name: Compile diff PDF
         run: |
