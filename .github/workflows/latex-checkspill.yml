@@ -39,11 +39,12 @@ jobs:
                     fi
 
                     while IFS= read -r word; do
-                        grep -n -w "$word" "$file" | while IFS= read -r line; do
-                            echo "$line" >> "$output_file"
-                            echo "Errore: $word" >> "$output_file"
-                            echo >> "$output_file"   # 👈 riga vuota dopo ogni errore
-                        done
+                    grep -n -E "(^|[^A-Za-z])$word([^A-Za-z]|$)" "$file" |      while IFS= read -r line; do
+                        echo "$line" >> "$output_file"
+                        echo "Errore: $word" >> "$output_file"
+                        echo >> "$output_file"
+                    done
+
                     done <<< "$misspelled"
 
                     echo >> "$output_file"
