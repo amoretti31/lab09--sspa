@@ -87,13 +87,16 @@ jobs:
           latexmk -pdf -interaction=nonstopmode main.tex
           mv main.pdf artifacts/main/
 
+    
       # Step 5: Spellcheck all .tex files
       - name: Spellcheck .tex files
         run: |
-          mkdir -p artifacts/spellcheck
-          for file in $(find . -name "*.tex"); do
-            hunspell -l -t "$file" > artifacts/spellcheck/$(basename "$file").txt || true
-          done
+            mkdir -p artifacts/spellcheck
+            for file in $(find . -name "*.tex"); do
+                echo "Spellcheck for $file" > artifacts/spellcheck/$(basename "$file").txt
+                hunspell -t -l "$file" >> artifacts/spellcheck/$(basename "$file").txt || true
+            done
+
 
       # Step 6: Check bibliography
       - name: Check bibliography
