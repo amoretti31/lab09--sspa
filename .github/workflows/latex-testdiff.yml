@@ -50,6 +50,10 @@ jobs:
           # Generate the diff
           git diff "$BEFORE" "$AFTER" > diff.txt
 
+          # Sanitize diff.txt for UTF-8 (removes invalid chars)
+          iconv -f UTF-8 -t UTF-8 -c diff.txt -o diff.txt.utf8
+          mv diff.txt.utf8 diff.txt
+
       # Step 3: Create LaTeX document for the diff
       - name: Create LaTeX document for diff
         run: |
