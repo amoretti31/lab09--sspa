@@ -2,11 +2,9 @@ name: Spellcheck LaTeX Files
 
 on:
     push:
-        paths:
-            - '**/*.tex'
-    pull_request:
-        paths:
-            - '**/*.tex'
+        branches: [master]
+    pull_request:        
+        branches: [master]
 
 jobs:
     spellcheck:
