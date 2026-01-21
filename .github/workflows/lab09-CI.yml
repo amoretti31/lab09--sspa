@@ -1,0 +1,122 @@
+name: Lab09 - Full CI + Preview
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  full-ci:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/${{ github.repository }}:latex
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      # Step 1: Checkout repository with full history
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Fix Git safe.directory
+      - name: Git safe.directory
+        run: git config --global --add safe.directory "$(pwd)"
+
+      # Step 3: Generate git diff
+      - name: Generate git diff
+        run: |
+          mkdir -p artifacts/diff
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "Initial commit, no diff available" > artifacts/diff/diff.txt
+          else
+            git fetch origin "$BEFORE" --depth=1
+            git fetch origin "$AFTER" --depth=1
+            git diff "$BEFORE" "$AFTER" > artifacts/diff/diff.txt
+          fi
+
+          # Create LaTeX document for the diff
+          cat << 'EOF' > diff.tex
+          \documentclass[a4paper,11pt]{article}
+          \usepackage[T1]{fontenc}
+          \usepackage[utf8]{inputenc}
+          \usepackage{geometry}
+          \usepackage{xcolor}
+          \usepackage{listings}
+          \geometry{margin=1in}
+          \setlength{\parindent}{0pt}
+
+          \lstdefinestyle{gitdiff}{
+              basicstyle=\ttfamily\small,
+              morecomment=[l][\color{red}]{-},
+              morecomment=[l][\color{green!60!black}]{+}
+          }
+
+          \lstset{
+              style=gitdiff,
+              breaklines=true,
+              postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space}
+          }
+
+          \begin{document}
+          \section*{Git Diff}
+          Commit range:\\
+          \texttt{${{ github.event.before }}} -- \texttt{${{ github.sha }}}
+          \bigskip
+          \lstinputlisting{artifacts/diff/diff.txt}
+          \end{document}
+          EOF
+
+          # Compile diff PDF
+          latexmk -pdf -interaction=nonstopmode diff.tex
+          mv diff.pdf artifacts/diff/
+
+      # Step 4: Compile main PDF
+      - name: Compile main PDF
+        run: |
+          mkdir -p artifacts/main
+          latexmk -pdf -interaction=nonstopmode main.tex
+          mv main.pdf artifacts/main/
+
+      # Step 5: Spellcheck all .tex files
+      - name: Spellcheck .tex files
+        run: |
+          mkdir -p artifacts/spellcheck
+          for file in $(find . -name "*.tex"); do
+            hunspell -l -t "$file" > artifacts/spellcheck/$(basename "$file").txt || true
+          done
+
+      # Step 6: Check bibliography
+      - name: Check bibliography
+        run: |
+          mkdir -p artifacts/bib
+          for file in $(find . -name "main.tex"); do
+            pdflatex -interaction=nonstopmode "$file" >/dev/null 2>&1
+            bibtex "${file%.tex}" >/dev/null 2>&1 || echo "Bibtex failed for $file" >> artifacts/bib/bib_errors.txt
+          done
+
+      # Step 7: Upload all artifacts
+      - name: Upload all artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab09-full-artifacts
+          path: artifacts/
+
+      # Step 8: Publish PDFs via GitHub Pages
+      - name: Publish PDFs for preview
+        uses: peaceiris/actions-gh-pages@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./artifacts
+          destination_dir: lab09-preview
