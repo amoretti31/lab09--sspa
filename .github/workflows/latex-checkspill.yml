@@ -12,7 +12,7 @@ jobs:
 
         steps:
           - name: Checkout repository
-            uses: actions/checkout@v3
+            uses: actions/checkout@v4
     
           - name: Install dependencies
             run: |
@@ -37,7 +37,7 @@ jobs:
             run: pandoc spellcheck_report.txt -o spellcheck_report.pdf
     
           - name: Upload artifact
-            uses: actions/upload-artifact@v3
+            uses: actions/upload-artifact@v4
             with:
                 name: spellcheck-report
                 path: spellcheck_report.pdf
