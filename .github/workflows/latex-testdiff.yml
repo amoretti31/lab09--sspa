@@ -1,6 +1,9 @@
 name: LaTeX Test Diff
 
 on:
+    push:
+        paths:
+            - '**/*.tex'
     pull_request:
         paths:
             - '**/*.tex'
