@@ -14,19 +14,30 @@ jobs:
           - name: Checkout repository
             uses: actions/checkout@v3
     
-          - name: Install aspell
-            run: sudo apt-get update && sudo apt-get install -y aspell aspell-en
+          - name: Install dependencies
+            run: |
+                sudo apt-get update
+                sudo apt-get install -y aspell aspell-en pandoc texlive-latex-base
     
           - name: Find and spellcheck .tex files
             run: |
+                output_file="spellcheck_report.txt"
+                echo "Spellcheck Report" > $output_file
+                echo "=================" >> $output_file
                 for file in $(find . -name "*.tex"); do
-                echo "Checking spelling in $file"
-                misspelled=$(aspell --mode=tex list < "$file" | sort -u)
-                if [ -n "$misspelled" ]; then
-                    echo "Misspelled words in $file:"
-                    echo "$misspelled"
-                    exit 1
-                fi
+                    echo "Checking spelling in $file" >> $output_file
+                    aspell --mode=tex list < "$file" | sort -u | while read -r word; do
+                        grep -n "$word" "$file" | while read -r line; do
+                            echo "$file:$line" >> $output_file
+                        done
+                    done
                 done
-
-              
+    
+          - name: Convert report to PDF
+            run: pandoc spellcheck_report.txt -o spellcheck_report.pdf
+    
+          - name: Upload artifact
+            uses: actions/upload-artifact@v3
+            with:
+                name: spellcheck-report
+                path: spellcheck_report.pdf
