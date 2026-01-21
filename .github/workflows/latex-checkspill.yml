@@ -30,7 +30,12 @@ jobs:
                     echo "File: $file" >> "$output_file"
                     echo "-----------------" >> "$output_file"
 
-                    misspelled=$(aspell --personal=./.aspell.en.pws --mode=tex list < "$file" | sort -u)
+                    misspelled=$(aspell \
+                    --lang=en \
+                    --personal="$GITHUB_WORKSPACE/.aspell.en.pws" \
+                    --mode=tex \
+                    list < "$file" | sort -u)
+
 
                     if [ -z "$misspelled" ]; then
                         echo "No spelling errors found." >> "$output_file"
