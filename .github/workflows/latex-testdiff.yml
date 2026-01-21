@@ -19,26 +19,38 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
+      # Checkout full history
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history
+          fetch-depth: 0   # required to fetch previous commits
 
+      # Configure Git safe.directory and generate diff
       - name: Generate git diff
         run: |
+          # Fix dubious ownership error in container
+          git config --global --add safe.directory "$(pwd)"
+
           BEFORE="${{ github.event.before }}"
           AFTER="${{ github.sha }}"
 
+          echo "Before commit: $BEFORE"
+          echo "After commit:  $AFTER"
+
+          # Initial commit: no diff available
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             echo "Initial commit, no diff available" > diff.txt
             exit 0
           fi
 
+          # Fetch commits explicitly to ensure they exist locally
           git fetch origin "$BEFORE" --depth=1
           git fetch origin "$AFTER" --depth=1
 
+          # Generate the diff
           git diff "$BEFORE" "$AFTER" > diff.txt
 
+      # Wrap the diff in a LaTeX document
       - name: Create LaTeX document for diff
         run: |
           cat << 'EOF' > diff.tex
@@ -61,6 +73,7 @@ jobs:
           \begin{Verbatim}[fontsize=\small]
           EOF
 
+          # Insert the diff contents
           cat diff.txt >> diff.tex
 
           cat << 'EOF' >> diff.tex
@@ -68,10 +81,12 @@ jobs:
           \end{document}
           EOF
 
+      # Compile the LaTeX document into a PDF
       - name: Compile diff PDF
         run: |
           latexmk -pdf -interaction=nonstopmode diff.tex
 
+      # Upload the PDF as an artifact
       - name: Upload diff PDF artifact
         uses: actions/upload-artifact@v4
         with:
