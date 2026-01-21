@@ -1,0 +1,55 @@
+name: LaTeX Test Diff
+
+on:
+    pull_request:
+        paths:
+            - '**/*.tex'
+
+jobs:
+    diff-pdf:
+        runs-on: ubuntu-latest
+
+        steps:
+        # Step 1: Checkout the repository
+        - name: Checkout repository
+          uses: actions/checkout@v3
+          with:
+                fetch-depth: 0 # Ensure full history is fetched for diff
+
+        # Step 2: Install required tools
+        - name: Install required tools
+          run: |
+                sudo apt-get update
+                sudo apt-get install -y texlive-full latexdiff
+
+        # Step 3: Get the base branch version
+        - name: Get base branch version
+          run: git fetch origin ${{ github.base_ref }} && git checkout ${{ github.base_ref }}
+
+        # Step 4: Copy base branch files
+        - name: Copy base branch files
+          run: cp -r . ../base-branch
+
+        # Step 5: Checkout the pull request branch
+        - name: Checkout pull request branch
+          run: git checkout ${{ github.head_ref }}
+
+        # Step 6: Generate the diff file
+        - name: Generate LaTeX diff
+          run: |
+                mkdir -p diff
+                latexdiff ../base-branch/main.tex main.tex > diff/diff.tex
+
+        # Step 7: Compile the diff file into a PDF
+        - name: Compile diff PDF
+          run: |
+                cd diff
+                pdflatex diff.tex
+                pdflatex diff.tex # Run twice for references
+
+        # Step 8: Upload the diff PDF as an artifact
+        - name: Upload diff PDF
+          uses: actions/upload-artifact@v3
+          with:
+                name: latex-diff
+                path: diff/diff.pdf
