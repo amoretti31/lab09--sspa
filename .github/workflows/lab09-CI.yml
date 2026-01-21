@@ -114,22 +114,29 @@ jobs:
             echo "<html><body><h1>Lab09 CI Artifacts</h1>" > artifacts/html/index.html
             echo "<h2>Git Diff</h2>" >> artifacts/html/index.html
             if [ -f artifacts/diff/diff.pdf ]; then
-            echo "<a href='../diff/diff.pdf'>Download Git Diff PDF</a><br>" >> artifacts/html/index.html
+            echo "<embed src='../diff/diff.pdf' width='100%' height='600px' type='application/pdf'><br>" >> artifacts/html/index.html
             fi
             echo "<h2>Main PDF</h2>" >> artifacts/html/index.html
             if [ -f artifacts/main/main.pdf ]; then
-            echo "<a href='../main/main.pdf'>Download Main PDF</a><br>" >> artifacts/html/index.html
+            echo "<embed src='../main/main.pdf' width='100%' height='600px' type='application/pdf'><br>" >> artifacts/html/index.html
             fi
             echo "<h2>Spellcheck Reports</h2>" >> artifacts/html/index.html
             for file in artifacts/spellcheck/*.txt; do
             [ -e "$file" ] || continue
-            echo "<a href='../spellcheck/$(basename "$file")'>$(basename "$file")</a><br>" >> artifacts/html/index.html
+            echo "<h3>$(basename "$file")</h3>" >> artifacts/html/index.html
+            echo "<pre>" >> artifacts/html/index.html
+            cat "$file" >> artifacts/html/index.html
+            echo "</pre>" >> artifacts/html/index.html
             done
             echo "<h2>Bibliography Check</h2>" >> artifacts/html/index.html
             if [ -f artifacts/bib/bib_errors.txt ]; then
-            echo "<a href='../bib/bib_errors.txt'>Bibliography Errors</a><br>" >> artifacts/html/index.html
+            echo "<h3>Bibliography Errors</h3>" >> artifacts/html/index.html
+            echo "<pre>" >> artifacts/html/index.html
+            cat artifacts/bib/bib_errors.txt >> artifacts/html/index.html
+            echo "</pre>" >> artifacts/html/index.html
             fi
             echo "</body></html>" >> artifacts/html/index.html
+
     # Step 8: Upload HTML report and artifacts
       - name: Upload HTML report and artifacts
         uses: actions/upload-artifact@v4
