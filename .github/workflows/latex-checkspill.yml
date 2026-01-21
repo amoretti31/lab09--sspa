@@ -1,0 +1,27 @@
+name: Spellcheck LaTeX Files
+
+on:
+    push:
+        paths:
+            - '**/*.tex'
+    pull_request:
+        paths:
+            - '**/*.tex'
+
+jobs:
+    spellcheck:
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Checkout repository
+            uses: actions/checkout@v3
+    
+          - name: Install aspell
+            run: sudo apt-get update && sudo apt-get install -y aspell aspell-en
+    
+          - name: Find and spellcheck .tex files
+            run: |
+              for file in $(find . -name "*.tex"); do
+                echo "Checking spelling in $file"
+                aspell --mode=tex check "$file"
+              done
