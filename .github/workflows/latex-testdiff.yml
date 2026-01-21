@@ -1,4 +1,4 @@
-name: Lab09 - Generate Diff
+name: Lab09 - Generate Diff PDF
 
 on:
   push:
@@ -6,10 +6,17 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
-  diff:
+  diff-pdf:
     runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/${{ github.repository }}:latex
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -17,21 +24,55 @@ jobs:
         with:
           fetch-depth: 0   # REQUIRED for git diff
 
-      - name: Generate diff with previous commit
+      - name: Generate git diff
         run: |
-          echo "Previous commit: ${{ github.event.before }}"
-          echo "Current commit:  ${{ github.sha }}"
+          if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            echo "Initial commit, no diff available" > diff.txt
+          else
+            git diff \
+              ${{ github.event.before }} \
+              ${{ github.sha }} \
+              > diff.txt
+          fi
 
-          git diff \
-            ${{ github.event.before }} \
-            ${{ github.sha }} \
-            > changes.diff
+      - name: Create LaTeX document for diff
+        run: |
+          cat << 'EOF' > diff.tex
+          \documentclass[a4paper,11pt]{article}
+          \usepackage[T1]{fontenc}
+          \usepackage[utf8]{inputenc}
+          \usepackage{geometry}
+          \usepackage{fancyvrb}
+          \usepackage{xcolor}
 
-          echo "Diff generated:"
-          wc -l changes.diff
+          \geometry{margin=1in}
+          \setlength{\parindent}{0pt}
 
-      - name: Upload diff artifact
+          \begin{document}
+
+          \section*{Git Diff}
+          Commit range:\\
+          \texttt{${{ github.event.before }} → ${{ github.sha }}}
+
+          \bigskip
+
+          \begin{Verbatim}[fontsize=\small]
+          EOF
+
+          cat diff.txt >> diff.tex
+
+          cat << 'EOF' >> diff.tex
+          \end{Verbatim}
+
+          \end{document}
+          EOF
+
+      - name: Compile diff PDF
+        run: |
+          latexmk -pdf -interaction=nonstopmode diff.tex
+
+      - name: Upload diff PDF artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lab09-diff
-          path: changes.diff
+          name: lab09-diff-pdf
+          path: diff.pdf
