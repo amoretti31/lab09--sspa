@@ -17,7 +17,7 @@ jobs:
           - name: Install dependencies
             run: |
                 sudo apt-get update
-                sudo apt-get install -y aspell aspell-en pandoc texlive-latex-base
+                sudo apt-get install -y aspell aspell-en pandoc texlive-latex-base texlive-latex-recommended
     
           - name: Find and spellcheck .tex files
             run: |
