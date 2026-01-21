@@ -19,7 +19,14 @@ jobs:
     
           - name: Find and spellcheck .tex files
             run: |
-              for file in $(find . -name "*.tex"); do
+                for file in $(find . -name "*.tex"); do
                 echo "Checking spelling in $file"
-                aspell --mode=tex check "$file"
-              done
+                misspelled=$(aspell --mode=tex list < "$file" | sort -u)
+                if [ -n "$misspelled" ]; then
+                    echo "Misspelled words in $file:"
+                    echo "$misspelled"
+                    exit 1
+                fi
+                done
+
+              
