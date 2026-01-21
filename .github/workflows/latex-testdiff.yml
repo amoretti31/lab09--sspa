@@ -19,16 +19,16 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      # Checkout full history
+      # Step 1: Checkout repository with full history
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # required to fetch previous commits
+          fetch-depth: 0
 
-      # Configure Git safe.directory and generate diff
+      # Step 2: Generate git diff
       - name: Generate git diff
         run: |
-          # Fix dubious ownership error in container
+          # Fix dubious ownership in container
           git config --global --add safe.directory "$(pwd)"
 
           BEFORE="${{ github.event.before }}"
@@ -37,57 +37,58 @@ jobs:
           echo "Before commit: $BEFORE"
           echo "After commit:  $AFTER"
 
-          # Initial commit: no diff available
+          # Handle initial commit
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             echo "Initial commit, no diff available" > diff.txt
             exit 0
           fi
 
-          # Fetch commits explicitly to ensure they exist locally
+          # Fetch commits explicitly
           git fetch origin "$BEFORE" --depth=1
           git fetch origin "$AFTER" --depth=1
 
           # Generate the diff
           git diff "$BEFORE" "$AFTER" > diff.txt
 
-          - name: Create LaTeX document for diff
-          run: |
-            cat << 'EOF' > diff.tex
-            \documentclass[a4paper,11pt]{article}
-            \usepackage[T1]{fontenc}
-            \usepackage[utf8]{inputenc}
-            \usepackage{geometry}
-            \usepackage{xcolor}
-            \usepackage{listings}
-            \geometry{margin=1in}
-            \setlength{\parindent}{0pt}
-        
-            \lstdefinestyle{gitdiff}{
-                basicstyle=\ttfamily\small,
-                morecomment=[l][\color{red}]{-},
-                morecomment=[l][\color{green!60!black}]{+}
-            }
-        
-            \begin{document}
-        
-            \section*{Git Diff}
-            Commit range:\\
-            \texttt{${{ github.event.before }}} → \texttt{${{ github.sha }}}
-        
-            \bigskip
-        
-            \lstset{style=gitdiff}
-            \lstinputlisting{diff.txt}
-        
-            \end{document}
-            EOF
-        
-      # Compile the LaTeX document into a PDF
+      # Step 3: Create LaTeX document for the diff
+      - name: Create LaTeX document for diff
+        run: |
+          cat << 'EOF' > diff.tex
+          \documentclass[a4paper,11pt]{article}
+          \usepackage[T1]{fontenc}
+          \usepackage[utf8]{inputenc}
+          \usepackage{geometry}
+          \usepackage{xcolor}
+          \usepackage{listings}
+          \geometry{margin=1in}
+          \setlength{\parindent}{0pt}
+
+          \lstdefinestyle{gitdiff}{
+              basicstyle=\ttfamily\small,
+              morecomment=[l][\color{red}]{-},
+              morecomment=[l][\color{green!60!black}]{+}
+          }
+
+          \begin{document}
+
+          \section*{Git Diff}
+          Commit range:\\
+          \texttt{${{ github.event.before }}} → \texttt{${{ github.sha }}}
+
+          \bigskip
+
+          \lstset{style=gitdiff}
+          \lstinputlisting{diff.txt}
+
+          \end{document}
+          EOF
+
+      # Step 4: Compile the LaTeX document into a PDF
       - name: Compile diff PDF
         run: |
           latexmk -pdf -interaction=nonstopmode diff.tex
 
-      # Upload the PDF as an artifact
+      # Step 5: Upload the PDF as an artifact
       - name: Upload diff PDF artifact
         uses: actions/upload-artifact@v4
         with:
