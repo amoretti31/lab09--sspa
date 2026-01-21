@@ -1,38 +1,37 @@
-name: LaTeX Test Diff
+name: Lab09 - Generate Diff
 
 on:
-    push:
-        branches: [master]
-    pull_request:        
-        branches: [master]
+  push:
+    branches: [master]
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                fetch-depth: 0
-            - name: Set safe directory for Git
-              run: git config --global --add safe.directory /__w/lab09--sspa/lab09--sspa
-            - name: Get previous version
-              run: |
-                git fetch origin master
-                if git rev-parse FETCH_HEAD~1 >/dev/null 2>&1; then
-                  git checkout FETCH_HEAD~1 main.tex
-                else
-                  echo "No previous commit available" && exit 1
-              id: previous
-            - name: Generate diff
-              run: latexdiff main.tex main.tex > diff.tex
-            - name: Compile PDF from diff
-              run: latexmk -pdf -interaction=nonstopmode diff.tex
-            - name: Upload PDF artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: lab09-latex-diff-pdf
-                path: ./diff.pdf
+  diff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # REQUIRED for git diff
+
+      - name: Generate diff with previous commit
+        run: |
+          echo "Previous commit: ${{ github.event.before }}"
+          echo "Current commit:  ${{ github.sha }}"
+
+          git diff \
+            ${{ github.event.before }} \
+            ${{ github.sha }} \
+            > changes.diff
+
+          echo "Diff generated:"
+          wc -l changes.diff
+
+      - name: Upload diff artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab09-diff
+          path: changes.diff
